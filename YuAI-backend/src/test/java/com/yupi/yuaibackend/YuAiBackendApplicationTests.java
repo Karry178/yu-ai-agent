@@ -1,13 +1,13 @@
-package com.yupi.yuaiagent;
+package com.yupi.yuaibackend;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class YuAiAgentApplicationTests {
+class YuAiBackendApplicationTests {
 
-    @Test
-    void contextLoads() {
-    }
+	@Test
+	void contextLoads() {
+	}
 
 }

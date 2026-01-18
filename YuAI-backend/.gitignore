@@ -1,6 +1,7 @@
 ### 自定义忽略的文件，保证不去上传个人敏感信息
 application-local.yml
 **/TestApiKey.java
+TestApiKey.java
 
 HELP.md
 target/
