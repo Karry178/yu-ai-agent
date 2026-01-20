@@ -1,14 +1,21 @@
 spring:
   application:
-   name: YuAI-backend
+    name: YuAI-backend
   profiles:
     active: local
-  # 引入ollama本地部署模型
-  ai:
-    ollama:
-      base-url: http://localhost:11434
-      chat:
-        model: llama3
+
+#  ai:
+#    # 引入阿里云灵积大模型
+#    dashscope:
+#      api-key: your-api-key
+#      chat:
+#        options:
+#          model: qwen-plus
+    # 引入ollama本地部署模型
+#    ollama:
+#      base-url: http://localhost:11434
+#      chat:
+#        model: llama3
 
 server:
   port: 8123
@@ -32,3 +39,8 @@ knife4j:
   enable: true
   setting:
     language: zh_cn
+
+# 自定义打印日志级别
+#logging:
+#  level:
+#    org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor: debug

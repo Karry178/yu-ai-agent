@@ -2,6 +2,7 @@
 application-local.yml
 **/TestApiKey.java
 TestApiKey.java
+tmp
 
 HELP.md
 target/
