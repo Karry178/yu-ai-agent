@@ -4,7 +4,12 @@ spring:
   profiles:
     active: local
 
-#  ai:
+  autoconfigure:
+    exclude:
+      - org.springframework.ai.autoconfigure.vectorstore.pgvector.PgVectorStoreAutoConfiguration
+      - org.springframework.ai.autoconfigure.ollama.OllamaAutoConfiguration
+
+  #  ai:
 #    # 引入阿里云灵积大模型
 #    dashscope:
 #      api-key: your-api-key

@@ -9,14 +9,17 @@ import org.springframework.test.context.ActiveProfiles;
 import java.util.UUID;
 
 @ActiveProfiles("local")
-@SpringBootTest(properties = {
-    "spring.ai.ollama.chat.enabled=false"
-})
+@SpringBootTest(properties =
+        "spring.autoconfigure.exclude=org.springframework.ai.autoconfigure.vectorstore.pgvector.PgVectorStoreAutoConfiguration,org.springframework.ai.autoconfigure.ollama.OllamaAutoConfiguration"
+)
 class LoveAppTest {
 
     @Resource
     private LoveApp loveApp;
 
+    /**
+     * 调用大模型进行对话
+     */
     @Test
     void testChat() {
         String chatId = UUID.randomUUID().toString();
@@ -34,11 +37,28 @@ class LoveAppTest {
         Assertions.assertNotNull(answer);
     }
 
+
+    /**
+     * 调用大模型 + prompt提示词 输出报告
+     */
     @Test
     void doChatWithReport() {
         String chatId = UUID.randomUUID().toString();
         String message = "你好，我是程序员Karry，我想让另一半和我能走长久，但是我不知道该怎么做";
         LoveApp.LoveReport loveReport = loveApp.doChatWithReport(message, chatId);
+        Assertions.assertNotNull(loveReport);
+    }
+
+
+    /**
+     * 调用大模型，根据RAG文档内容进行对话
+     */
+    @Test
+	void doChatWithRag() {
+        String chatId = UUID.randomUUID().toString();
+        String message = "你好，我已经结婚了，但是婚后关系不太亲密，我不知道该怎么做";
+        // 调用doChatWithRag()方法
+        String loveReport = loveApp.doChatWithRag(message, chatId);
         Assertions.assertNotNull(loveReport);
     }
 }

@@ -4,14 +4,22 @@ import com.yupi.yuaibackend.advisor.MyLoggerAdvisor;
 import com.yupi.yuaibackend.advisor.ReReadingAdvisor;
 import com.yupi.yuaibackend.chatmemory.DatabaseChatMemory;
 import com.yupi.yuaibackend.chatmemory.FileBasedChatMemory;
+import com.yupi.yuaibackend.rag.LoveAppRagCloudAdvisorConfig;
+import com.yupi.yuaibackend.rag.LoveAppRagCustomAdvisorFactory;
+import com.yupi.yuaibackend.rag.QueryRewriter;
 import com.yupi.yuaibackend.service.ChatMessageRepository;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.client.advisor.QuestionAnswerAdvisor;
+import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -33,6 +41,8 @@ public class LoveApp {
             + "围绕单身、恋爱、已婚三种状态提问：单身状态询问社交圈拓展及追求心仪对象的困扰；"
             + "恋爱状态询问沟通、习惯差异引发的矛盾；已婚状态询问家庭责任与亲属关系处理的问题"
             + "引导用户详述事情经过、对方反应及自身想法，以便给出专属解决方案。";
+	@Autowired
+	private Advisor loveAppRagCloudAdvisor;
 
 
     /**
@@ -67,9 +77,6 @@ public class LoveApp {
     }
 
 
-
-
-
     /**
      * 编写聊天方法
      * @param message
@@ -92,8 +99,8 @@ public class LoveApp {
 
     // java21新特性：使用record记录特性 快速定义变量，相当于定义一个类
     record LoveReport(String title, List<String> suggestions) {
-
     }
+
 
     /**
      * AI恋爱报告功能（实战结构化输出）
@@ -114,5 +121,68 @@ public class LoveApp {
 
         log.info("loveRepost: {}", loveReport);
         return loveReport;
+    }
+
+
+    // ========== 【RAG功能】AI恋爱知识库问答功能 =========
+    // 引入一个Bean
+    @Resource
+    private VectorStore loveAppVectorStore;
+
+    // 引入阿里云知识库的 RAG
+    @Resource
+    private Advisor LoveAppRagCloudAdvisor;
+
+    // 引入PGVectorStore 向量数据库
+    @Resource
+    private VectorStore pgVectorVectorStore;
+
+    // 引入查询重写 QueryRewriter
+    @Resource
+    private QueryRewriter queryRewriter;
+
+    /**
+     * 和 RAG 知识库进行对话
+     * @param message
+     * @param chatId
+     * @return
+     */
+    public String doChatWithRag (String message, String chatId) {
+
+        // 若使用查询重写，需要把用户的提示词用QueryRewriter方法修改
+        String rewrittenMessage = queryRewriter.doQueryRewriter(message);
+
+        // 复用chatClient，生成根据RAG的报告
+        ChatResponse chatResponse = chatClient
+                .prompt()
+                // 用户输入信息 - message（使用查询重写时，要改为重写后的Message）
+                .user(rewrittenMessage)
+                .advisors(spec -> spec.param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId)
+                        .param(CHAT_MEMORY_CONVERSATION_ID_KEY, 10))
+                // 开启自定义Advisor日志
+                .advisors(new MyLoggerAdvisor())
+                // 1.应用本地 RAG 知识库问答 【本地 RAG 开启的核心代码 一行即可】
+                .advisors(new QuestionAnswerAdvisor(loveAppVectorStore))
+
+                // 2.使用阿里云知识库的 RAG 的检索增强服务
+                // .advisors(loveAppRagCloudAdvisor)
+
+                // 3.应用 RAG 检索增强服务 - 基于 PgVector向量存储（使用的阿里云pgsql）
+                // .advisors(new QuestionAnswerAdvisor(pgVectorVectorStore))
+
+                // 4.使用自定义的 LoveAppRagCustomAdvisorFactory 工厂的 RAG 检索增强服务 （文档查询器 + 上下文增强）
+                /*.advisors(
+                        LoveAppRagCustomAdvisorFactory.createLoveAppRagCustomAdvisor(
+                                loveAppVectorStore, "单身"
+                        )
+                )*/
+                .call()
+                .chatResponse();
+
+        // 从响应结果中得到对应文本内容
+        String content = chatResponse.getResult().getOutput().getText();
+        // 打日志，并返回结果
+        log.info("content：{}", content);
+        return content;
     }
 }
