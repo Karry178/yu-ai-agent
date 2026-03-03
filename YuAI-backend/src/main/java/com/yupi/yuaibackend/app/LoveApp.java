@@ -18,8 +18,11 @@ import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -35,6 +38,8 @@ import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvis
 public class LoveApp {
 
     private final ChatClient chatClient;
+    
+    private final ChatModel chatModel;
 
     // 系统预设 - 提示词
     private static final String SYSTEM_PROMPT = "扮演深耕恋爱心理领域的专家。 开场向用户表明身份，告知用户可倾诉恋爱难题。"
@@ -52,6 +57,7 @@ public class LoveApp {
      * @param chatMessageRepository
      */
     public LoveApp(ChatModel dashscopeChatModel, ChatMessageRepository chatMessageRepository) {
+        this.chatModel = dashscopeChatModel;
 
         // 初始化基于MySQL的对话记忆
         DatabaseChatMemory chatMemory = new DatabaseChatMemory(chatMessageRepository);
@@ -127,14 +133,16 @@ public class LoveApp {
     // ========== 【RAG功能】AI恋爱知识库问答功能 =========
     // 引入一个Bean
     @Resource
+    @Qualifier("loveAppVectorStore")
     private VectorStore loveAppVectorStore;
 
     // 引入阿里云知识库的 RAG
     @Resource
     private Advisor LoveAppRagCloudAdvisor;
 
-    // 引入PGVectorStore 向量数据库
-    @Resource
+    // 引入PGVectorStore 向量数据库（可选，只在 pgvector profile 激活时才注入）
+    @Autowired(required = false)
+    @Qualifier("pgVectorVectorStore")
     private VectorStore pgVectorVectorStore;
 
     // 引入查询重写 QueryRewriter
@@ -183,6 +191,56 @@ public class LoveApp {
         String content = chatResponse.getResult().getOutput().getText();
         // 打日志，并返回结果
         log.info("content：{}", content);
+        return content;
+    }
+
+
+    // AI 恋爱知识库 调用工具 能力
+    @Resource
+    private ToolCallback[] allTools;
+
+    public String doChatWithTools(String message, String chatId) {
+        ChatResponse chatResponse = chatClient
+                .prompt()
+                .user(message)
+                .advisors(spec -> spec.param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId)
+                        .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 10))
+                // 开启日志
+                .advisors(new MyLoggerAdvisor())
+                // 载入工具集
+                .tools(allTools)
+                .call()
+                .chatResponse();
+
+        String content = chatResponse.getResult().getOutput().getText();
+        log.info("loveReport: {}", content);
+        return content;
+    }
+
+
+    // AI 调用 MCP服务 --- AI 恋爱报告功能
+    @Resource
+    private ToolCallbackProvider toolCallbackProvider;
+
+    public String doChatWithMcp(String message, String chatId) {
+        // 为MCP调用使用特殊的系统提示词，明确告知AI必须使用工具
+        String mcpSystemPrompt = "你是一个恋爱心理专家助手，拥有图片搜索等工具能力。" +
+            "当用户要求搜索、查找或展示图片时，你必须调用searchImage工具来完成任务，而不是拒绝或解释为什么不能做。" +
+            "工具调用后，请用友好的方式向用户展示搜索结果。";
+        
+        ChatResponse chatResponse = ChatClient.builder(chatModel)
+                .defaultSystem(mcpSystemPrompt)
+                .defaultAdvisors(new MyLoggerAdvisor())
+                .build()
+                .prompt()
+                .user(message)
+                .advisors(spec -> spec.param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId)
+                        .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 10))
+                .tools(toolCallbackProvider)
+                .call()
+                .chatResponse();
+        String content = chatResponse.getResult().getOutput().getText();
+        log.info("content: {}", content);
         return content;
     }
 }

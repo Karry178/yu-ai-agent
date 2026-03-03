@@ -158,6 +158,37 @@
 			<version>1.0.0-M6</version>
 		</dependency>
 
+		<!-- 14.引入 jsoup HTML 的依赖：爬取数据 -->
+		<dependency>
+			<groupId>org.jsoup</groupId>
+			<artifactId>jsoup</artifactId>
+			<version>1.19.1</version>
+		</dependency>
+
+		<!-- 15.引入 itexpdf 的依赖：生成PDF -->
+		<!-- https://mvnrepository.com/artifact/com.itextpdf/itext-core -->
+		<dependency>
+			<groupId>com.itextpdf</groupId>
+			<artifactId>itext-core</artifactId>
+			<version>9.1.0</version>
+			<type>pom</type>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/com.itextpdf/font-asian -->
+		<dependency>
+			<groupId>com.itextpdf</groupId>
+			<artifactId>font-asian</artifactId>
+			<version>9.1.0</version>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- 16.引入Spring AI MCP的依赖 -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-mcp-client-spring-boot-starter</artifactId>
+			<version>1.0.0-M6</version>
+		</dependency>
+
+
 	</dependencies>
 
 	<build>

@@ -13,6 +13,7 @@ import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import javax.sql.DataSource;
 import java.util.List;
@@ -22,6 +23,7 @@ import static org.springframework.ai.vectorstore.pgvector.PgVectorStore.PgIndexT
 
 @Configuration
 @Slf4j
+@Profile("pgvector")  // 只在 pgvector profile 激活时才加载此配置
 public class PgVectorVectorStoreConfig {
 
 	// 引入 文档加载器

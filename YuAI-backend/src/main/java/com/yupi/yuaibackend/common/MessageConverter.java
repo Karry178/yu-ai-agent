@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yupi.yuaibackend.model.entity.ChatMessage;
 import org.springframework.ai.chat.messages.*;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -90,7 +91,7 @@ public class MessageConverter {
             case "user" -> new UserMessage(text);
             case "assistant" -> new AssistantMessage(text, metadata);
             case "system" -> new SystemMessage(text);
-            case "tool" -> new ToolResponseMessage(List.of(), metadata);
+            case "tool" -> new ToolResponseMessage(Collections.emptyList(), metadata);
             default -> throw new IllegalArgumentException("未识别的消息类型：" + messageType);
         };
     }

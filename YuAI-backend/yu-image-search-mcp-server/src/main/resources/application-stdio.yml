@@ -1,0 +1,22 @@
+spring:
+  ai:
+    mcp:
+      server:
+        name: yu-image-search-mcp-server
+        version: 0.0.1
+        type: SYNC
+        # stdio
+        stdio: true
+  # stdio
+  main:
+    web-application-type: none
+    banner-mode: off
+
+# 将日志输出到文件，避免干扰 MCP 协议的 stdout 通信
+logging:
+  file:
+    name: D:/Java/jar_temp/mcp-server.log
+  pattern:
+    console: ""
+  level:
+    root: INFO
